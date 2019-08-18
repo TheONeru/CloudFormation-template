@@ -1,0 +1,388 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: VPC and Subnet Create Stuck
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+      - Label:
+          default:  "Network Configuration"
+        Parameters:
+          - VPCCIDR
+          - PublicSubnetACIDR
+          - PublicSubnetCCIDR
+          - AppSubnetACIDR
+          - AppSubnetCCIDR
+          - DBSubnetACIDR
+          - DBSubnetCCIDR
+          - InspectSubnetCIDR
+    ParametersLabels:
+      VPCCIDR:
+        default: "VPC CIDR"
+      PublicSubnetACIDR:
+        default: "PublicSubnetA CIDR"
+      PublicSubnetCCIDR:
+        default: "PublicSubnetC CIDR"
+      AppSubnetACIDR:
+        default: "AppSubnetA CIDR"
+      AppSubnetCCIDR:
+        default: "AppSubnetC CIDR"
+      DBSubnetACIDR:
+        default: "DBSubnetA CIDR"
+      DBSubnetCCIDR:
+        default: "DBSubnetC CIDR"
+      InspectSubnetCIDR:
+        default: "InspectSubnet CIDR"
+
+#network default Configuration make reference https://qiita.com/nisshiee/items/df4261132ec686964605
+Parameters:
+  PJPrefix:
+    Type: String
+  VPCCIDR:
+    Type: String
+    Default: "10.0.0.0/16"
+  PublicSubnetACIDR:
+    Type: String
+    Default: "10.0.128.0/24"
+  PublicSubnetCCIDR:
+    Type: String
+    Default: "10.0.129.0/24"
+  AppSubnetACIDR:
+    Type: String
+    Default: "10.0.192.0/26"
+  AppSubnetCCIDR:
+    Type: String
+    Default: "10.0.192.64/26"
+  DBSubnetACIDR:
+    Type: String
+    Default: "10.0.193.0/26"
+  DBSubnetCCIDR:
+    Type: String
+    Default: "10.0.193.64/26"
+  InspectSubnetCIDR:
+    Type: String
+    Default: "10.0.194.0/26"
+
+Resources:
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsSupport: "true"
+      EnableDnsHostnames: "true"
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-vpc"
+
+  # InternetGateway Create
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-igw"
+
+  #IGW Attach
+  InternetGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  #Subnet Create
+  PublicSubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: !Ref PublicSubnetACIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-public-subnet-a"
+  PublicSubnetC:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      CidrBlock: !Ref PublicSubnetCCIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-public-subnet-c"
+  AppSubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: !Ref AppSubnetACIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-app-subnet-a"
+  AppSubnetC:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      CidrBlock: !Ref AppSubnetCCIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-app-subnet-c"
+  DBSubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: !Ref DBSubnetACIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-db-subnet-a"
+  DBSubnetC:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      CidrBlock: !Ref DBSubnetCCIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-db-subnet-c"
+  InspectSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: !Ref InspectSubnetCIDR
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-inspect-subnet-a"
+
+  #Route table Create
+  PublicRouteTableA:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-public-route-a"
+  PublicRouteTableC:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-public-route-c"
+  AppRouteTableA:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-app-route-a"
+  AppRouteTableC:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-app-route-c"
+  DBRouteTableA:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-db-route-a"
+  DBRouteTableC:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-db-route-c"
+  InspectRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-inspect-route-a"
+
+  #Route Create
+  PublicRouteA:
+    Type: "AWS::EC2::Route"
+    Properties:
+      RouteTableId: !Ref PublicRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+  PublicRouteC:
+    Type: "AWS::EC2::Route"
+    Properties:
+      RouteTableId: !Ref PublicRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+  InspectRoute:
+    Type: "AWS::EC2::Route"
+    Properties:
+      RouteTableId: !Ref InspectRouteTable
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+
+
+  #RouteTable Associate
+  PublicSubnetARouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTableA
+  PublicSubnetCRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref PublicSubnetC
+      RouteTableId: !Ref PublicRouteTableC
+  AppSubnetARouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref AppSubnetA
+      RouteTableId: !Ref AppRouteTableA
+  AppSubnetCRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref AppSubnetC
+      RouteTableId: !Ref AppRouteTableC
+  DBSubnetARouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref DBSubnetA
+      RouteTableId: !Ref DBRouteTableA
+  DBSubnetCRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref DBSubnetC
+      RouteTableId: !Ref DBRouteTableC
+  InspectSubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref InspectSubnet
+      RouteTableId: !Ref InspectRouteTable
+
+Outputs:
+# VPC
+  VPC:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${PJPrefix}-vpc"
+
+  VPCCIDR:
+    Value: !Ref VPCCIDR
+    Export:
+      Name: !Sub "${PJPrefix}-vpc-cidr"
+
+# Subnet
+  PublicSubnetA:
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub "${PJPrefix}-public-subnet-a"
+
+  PublicSubnetACIDR:
+    Value: !Ref PublicSubnetACIDR
+    Export:
+      Name: !Sub "${PJPrefix}-public-subnet-a-cidr"
+
+  PublicSubnetC:
+    Value: !Ref PublicSubnetC
+    Export:
+      Name: !Sub "${PJPrefix}-public-subnet-c"
+
+  PublicSubnetCCIDR:
+    Value: !Ref PublicSubnetCCIDR
+    Export:
+      Name: !Sub "${PJPrefix}-public-subnet-c-cidr"
+
+  AppSubnetA:
+    Value: !Ref AppSubnetA
+    Export:
+      Name: !Sub "${PJPrefix}-app-subnet-a"
+
+  AppSubnetACIDR:
+    Value: !Ref AppSubnetACIDR
+    Export:
+      Name: !Sub "${PJPrefix}-app-subnet-a-cidr"
+
+  AppSubnetC:
+    Value: !Ref AppSubnetC
+    Export:
+      Name: !Sub "${PJPrefix}-app-subnet-c"
+
+  AppSubnetCCIDR:
+    Value: !Ref AppSubnetCCIDR
+    Export:
+      Name: !Sub "${PJPrefix}-app-subnet-c-cidr"
+
+  DBSubnetA:
+    Value: !Ref DBSubnetA
+    Export:
+      Name: !Sub "${PJPrefix}-db-subnet-a"
+
+  DBSubnetACIDR:
+    Value: !Ref DBSubnetACIDR
+    Export:
+      Name: !Sub "${PJPrefix}-db-subnet-a-cidr"
+
+  DBSubnetC:
+    Value: !Ref DBSubnetC
+    Export:
+      Name: !Sub "${PJPrefix}-db-subnet-c"
+
+  DBSubnetCCIDR:
+    Value: !Ref DBSubnetCCIDR
+    Export:
+      Name: !Sub "${PJPrefix}-db-subnet-c-cidr"
+      
+  InspectSubnet:
+    Value: !Ref InspectSubnet
+    Export:
+      Name: !Sub "${PJPrefix}-inspect-subnet-a"
+
+  InspectSubnetCIDR:
+    Value: !Ref InspectSubnetCIDR
+    Export:
+      Name: !Sub "${PJPrefix}-inspect-subnet-a-cidr"
+
+# Route
+  PublicRouteTableA:
+    Value: !Ref PublicRouteTableA
+    Export:
+      Name: !Sub "${PJPrefix}-public-route-a"
+
+  PublicRouteTableC:
+    Value: !Ref PublicRouteTableC
+    Export:
+      Name: !Sub "${PJPrefix}-public-route-c"
+
+  AppRouteTableA:
+    Value: !Ref AppRouteTableA
+    Export:
+      Name: !Sub "${PJPrefix}-app-route-a"
+
+  AppRouteTableC:
+    Value: !Ref AppRouteTableC
+    Export:
+      Name: !Sub "${PJPrefix}-app-route-c"
+
+  DBRouteTableA:
+    Value: !Ref DBRouteTableA
+    Export:
+      Name: !Sub "${PJPrefix}-db-route-a"
+
+  DBRouteTableC:
+    Value: !Ref DBRouteTableC
+    Export:
+      Name: !Sub "${PJPrefix}-db-route-c"
+      
+  InspectRouteTableA:
+    Value: !Ref InspectRouteTable
+    Export:
+      Name: !Sub "${PJPrefix}-inspect-route-a"
+
