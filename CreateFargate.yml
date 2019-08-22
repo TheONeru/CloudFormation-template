@@ -25,6 +25,8 @@ Metadata:
           - ECSImageName
           - ECSServiceName
           - ECSTaskDesiredCount
+          - DBInstanceName
+          - DBPassword
       - Label:
           default: "Scaling Configuration"
         Parameters:
@@ -55,7 +57,12 @@ Metadata:
         default: "ECSServiceName"
       ECSTaskDesiredCount:
         default: "ECSTaskDesiredCount"
+      DBInstanceName:
+        default: "DBInstanceName"
+      DBPassword:
+        default: "DBPassword"
  
+
 # ------------------------------------------------------------#
 # Input Parameters
 # ------------------------------------------------------------# 
@@ -114,7 +121,20 @@ Parameters:
   ECSTaskDesiredCount:
     Type: Number
     Default: 1
+      
+  DBInstanceName:
+    Type: String
+    Default: "rds"
  
+  DBPassword:
+    Default: "dbpassword"
+    NoEcho: true
+    Type: String
+    MinLength: 8
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: "must contain only alphanumeric characters."
+
 # Scaling params
   ServiceScaleEvaluationPeriods:
     Description: The number of periods over which data is compared to the specified threshold
@@ -265,7 +285,7 @@ Resources:
 #  ECS Task Execution Role
 # ------------------------------------------------------------#
   ECSTaskExecutionRole:
-    Type: AWS::IAM::Role
+    Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Sub "${PJPrefix}-ECSTaskExecutionRolePolicy"
       Path: /
@@ -308,12 +328,23 @@ Resources:
             - HostPort: 80
               Protocol: tcp
               ContainerPort: 80
+          Environment:
+            - Name: "DB_PASSWORD"
+              Value: !Ref DBPassword
+            - Name: "DB_NAME"
+              Value: {"Fn::ImportValue" : !Sub "${PJPrefix}-${DBInstanceName}-dbname"}
+            - Name: "DB_HOSTNAME"
+              Value: {"Fn::ImportValue" : !Sub "${PJPrefix}-${DBInstanceName}-endpoint"}
+            - Name: "DB_USERNAME"
+              Value: {"Fn::ImportValue" : !Sub "${PJPrefix}-${DBInstanceName}-username"}
+            - Name: "DB_PORT"
+              Value: "3306"
  
 # ------------------------------------------------------------#
 #  ECS Service
 # ------------------------------------------------------------#
   ECSService:
-    Type: AWS::ECS::Service
+    Type: "AWS::ECS::Service"
     DependsOn: ALBListener
     Properties:
       Cluster: !Ref ECSCluster
@@ -339,7 +370,7 @@ Resources:
 #  Auto Scaling Service
 # ------------------------------------------------------------#
   ServiceAutoScalingRole:
-    Type: AWS::IAM::Role
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -362,7 +393,7 @@ Resources:
                 Resource: '*'
  
   ServiceScalingTarget:
-    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Type: "AWS::ApplicationAutoScaling::ScalableTarget"
     Properties:
       MinCapacity: !Ref TaskMinContainerCount
       MaxCapacity: !Ref TaskMaxContainerCount
@@ -378,7 +409,7 @@ Resources:
       - ServiceAutoScalingRole
  
   ServiceScaleOutPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
     Properties:
       PolicyName: !Sub "${PJPrefix}-${ECSServiceName}-ScaleOutPolicy"
       PolicyType: StepScaling
@@ -393,7 +424,7 @@ Resources:
     DependsOn: ServiceScalingTarget
  
   ServiceScaleInPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
     Properties:
       PolicyName: !Sub "${PJPrefix}-${ECSServiceName}-ScaleInPolicy"
       PolicyType: StepScaling
@@ -408,7 +439,7 @@ Resources:
     DependsOn: ServiceScalingTarget
  
   ServiceScaleOutAlarm:
-    Type: AWS::CloudWatch::Alarm
+    Type: "AWS::CloudWatch::Alarm"
     Properties:
       AlarmName: !Sub "${PJPrefix}-${ECSServiceName}-ScaleOutAlarm"
       EvaluationPeriods: !Ref ServiceScaleEvaluationPeriods
@@ -432,7 +463,7 @@ Resources:
       - ServiceScaleOutPolicy
  
   ServiceScaleInAlarm:
-    Type: AWS::CloudWatch::Alarm
+    Type: "AWS::CloudWatch::Alarm"
     Properties:
       AlarmName: !Sub "${PJPrefix}-${ECSServiceName}-ScaleInAlarm"
       EvaluationPeriods: !Ref ServiceScaleEvaluationPeriods
@@ -531,3 +562,7 @@ Outputs:
     Export:
       Name: !Sub "${PJPrefix}-${ECSServiceName}-arn"
 
+  ECSTaskExecutionRole:
+      Value: !Ref ECSTaskExecutionRole
+      Export:
+        Name: !Sub "${PJPrefix}-${ECSServiceName}-role"

@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create CloudFront"
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: "To S3 Path pattern"
+        Parameters:
+          - PathPattern
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------#
+Parameters:
+  PJPrefix:
+    Type: String
+  S3PathPattern:
+    Type: String
+    Default: "/img/*"
+
+
+Resources:
+
+  CloudFrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: {"Fn::Join" : ["", [{ "Fn::ImportValue" : !Sub "${PJPrefix}-s3bucket" } , ".s3.amazonaws.com"] ] }
+            S3OriginConfig:
+                OriginAccessIdentity: {"Fn::Join" : ["",[ "origin-access-identity/cloudfront/", {"Fn::ImportValue" : !Sub "${PJPrefix}-OAI-approved-s3" } ] ] }
+          - Id: LBOrigin
+            DomainName: { "Fn::ImportValue" : !Sub "${PJPrefix}-alb-dnsname" }
+            CustomOriginConfig:
+              HTTPPort: '80'
+              HTTPSPort: '443'
+              OriginProtocolPolicy: http-only
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          TargetOriginId: LBOrigin
+          ForwardedValues:
+           QueryString: 'false'
+           Cookies:
+             Forward: none
+          ViewerProtocolPolicy: allow-all
+          MinTTL: '100'
+        CacheBehaviors:
+          - AllowedMethods:
+            - HEAD
+            - GET
+            TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: 'true'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: allow-all
+            MinTTL: '50'
+            PathPattern: !Ref S3PathPattern
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-cloudfront-distribution"
+
+

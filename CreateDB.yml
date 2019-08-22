@@ -185,3 +185,9 @@ Outputs:
     Value: !Ref DBName
     Export:
       Name: !Sub "${PJPrefix}-${DBInstanceName}-dbname"
+
+  DBUserName:
+    Value: !Ref DBMasterUserName
+    Export:
+      Name: !Sub "${PJPrefix}-${DBInstanceName}-username"
+

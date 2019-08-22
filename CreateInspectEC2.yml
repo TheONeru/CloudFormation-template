@@ -25,10 +25,10 @@ Metadata:
 
 Parameters:
   PJPrefix:
-   Type: String
+    Type: String
   UseCase:
-   Type: String
-   Default: "DBinspect"
+    Type: String
+    Default: "DBinspect"
   InstanceType:
     Type: String
     Default: t1.micro
@@ -90,9 +90,9 @@ Parameters:
     ConstraintDescription: must be a valid EC2 instance type.
   KeyName:
     Description: Name of an EC2 KeyPair to enable SSH access to the instance.
-    Type: 'AWS::EC2::KeyPair::KeyName'
+    Type: "AWS::EC2::KeyPair::KeyName"
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  
+
 Resources:
   EC2Instance:
     Type: "AWS::EC2::Instance"
@@ -101,20 +101,20 @@ Resources:
       KeyName: !Ref KeyName
       ImageId: "ami-084040f99a74ce8c3"
       NetworkInterfaces:
-        - GroupSet: 
+        - GroupSet:
             - !Ref EC2SecurityGroup
           AssociatePublicIpAddress: "true"
           DeleteOnTermination: "true"
           DeviceIndex: "0"
-          SubnetId: { "Fn::ImportValue" : !Sub "${PJPrefix}-inspect-subnet-a"}
+          SubnetId: { "Fn::ImportValue": !Sub "${PJPrefix}-inspect-subnet-a" }
       Tags:
         - Key: Name
           Value: !Sub "${PJPrefix}-${UseCase}-ec2"
- 
+
   EC2SecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      VpcId: { "Fn::ImportValue" : !Sub "${PJPrefix}-vpc"}
+      VpcId: { "Fn::ImportValue": !Sub "${PJPrefix}-vpc" }
       GroupName: !Sub "${PJPrefix}-${UseCase}-ec2-sg"
       GroupDescription: "-"
       Tags:
@@ -129,4 +129,3 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: "0.0.0.0/0"
-

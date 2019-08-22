@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create S3"
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: "ECS Service Name"
+        Parameters:
+          - ECSServiceName
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------#
+Parameters:
+  PJPrefix:
+    Type: String
+  ECSServiceName:
+    Type: String
+    Default: "service"
+
+
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${PJPrefix}-s3bucket"
+
+  CloudFrontOriginAccessIdentity:
+    Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "OAI config"
+
+  BucketAccessPolicyFromtCloudFront:
+   Type: "AWS::S3::BucketPolicy"
+   Properties:
+     Bucket: !Ref S3Bucket
+     PolicyDocument:
+       Statement:
+         - Action: S3:GetObject
+           Effect: Allow
+           Resource: !Sub arn:aws:s3:::${S3Bucket}/*
+           Principal:
+             AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}
+
+  BucketAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action: "*"
+          Effect: "Allow"
+          Resource:
+          - !Join ["", ["arn:aws:s3:::", !Ref S3Bucket, /img/*]]
+      PolicyName: !Sub "${PJPrefix}-s3bucket-policy"
+      Roles: [{"Fn::ImportValue" : !Sub "${PJPrefix}-${ECSServiceName}-role"}]
+
+Outputs:
+  S3Bucket:
+    Value: !Ref S3Bucket
+    Export:
+      Name: !Sub "${PJPrefix}-s3bucket"
+
+  S3AccessPolicy:
+    Value: !Ref BucketAccessPolicy
+    Export:
+      Name: !Sub "${PJPrefix}-s3bucket-policy"
+
+  CloudFrontOriginAccessIdentity:
+    Value: !Ref CloudFrontOriginAccessIdentity
+    Export:
+      Name: !Sub "${PJPrefix}-OAI-approved-s3"

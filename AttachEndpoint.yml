@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  NAT Gateway Create
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+
+      - Label: 
+          default: "EndPointConfiguration"
+        Parameters: 
+          - EndPointACreate
+          - EndPointCCreate
+
+    ParameterLabels: 
+      EndPointCreate: 
+        default: "EndPointACreate"
+      EndPointCreate: 
+        default: "EndPointCCreate"
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------# 
+Parameters:
+  PJPrefix:
+    Type: String
+
+  EndPointACreate: 
+    Default: true
+    Type: String
+    AllowedValues: 
+      - true
+      - false
+
+  EndPointCCreate:
+    Default: true
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+# ------------------------------------------------------------#
+# Conditions
+# ------------------------------------------------------------# 
+Conditions: 
+  IsCreateEndPoint: !Equals [ !Ref EndPointACreate, true ]
+  IsCreateEndPointfalse: !Equals [ !Ref EndPointACreate, false ]
+
+  IsCreateEndPoint: !Equals [ !Ref EndPointCCreate, true ]
+  IsCreateEndPointfalse: !Equals [ !Ref EndPointCCreate, false ]
+
+Resources:
+# EndPoint Create
+  EndPoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      VpcId: { "Fn::ImportValue": !Sub "${PJPrefix}-vpc" }
+      RouteTableIds:
+        - { "Fn::ImportValue": !Sub "${PJPrefix}-app-route-a" }
+        - { "Fn::ImportValue": !Sub "${PJPrefix}-app-route-c" }
+      ServiceName: { "Fn::Join": [ "", [ "com.amazonaws.", { "Ref": "AWS::Region" }, ".s3" ] ] }
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 
+              - '*'
+            Resource: 
+              - {"Fn::Join" : ["", [ "arn:aws:s3:::", { "Fn::ImportValue" : !Sub "${PJPrefix}-s3bucket" } , "/*"] ] }
