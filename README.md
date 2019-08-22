@@ -2,14 +2,15 @@
 AWS CloudFormation-template
 依存関係解消のために以下の手順を踏まないと全て綺麗に作成できない
 
-VPC:
-  DB:
-  EC2:
-  NAT:
-  Endpoint:
+<p>VPC:
+<p>- DB:
+<p>- EC2:
+<p>- NAT:
+<p>- Endpoint:
 
-DB,NAT:
-  Fargate:
-    S3:
-      CloudFront:
+<p>DB,NAT:
+<p>- Fargate:
+<p> - S3:
+<p>  - CloudFront:
+
 
