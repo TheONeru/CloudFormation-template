@@ -8,11 +8,7 @@ Metadata:
           Default: "Project Name Prefix"
         Parameters:
           - PJPrefix
-      - Label:
-          Default: "use cases"
-        Parameters:
-          - UseCase
-      - Label:
+     - Label:
           Default: "EC2 Configuration"
         Parameters:
           - InstanceType
@@ -26,10 +22,7 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
-  UseCase:
-    Type: String
-    Default: "DBinspect"
-  InstanceType:
+ InstanceType:
     Type: String
     Default: t1.micro
     AllowedValues:
@@ -109,17 +102,17 @@ Resources:
           SubnetId: { "Fn::ImportValue": !Sub "${PJPrefix}-inspect-subnet-a" }
       Tags:
         - Key: Name
-          Value: !Sub "${PJPrefix}-${UseCase}-ec2"
+          Value: !Sub "${PJPrefix}-ec2"
 
   EC2SecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       VpcId: { "Fn::ImportValue": !Sub "${PJPrefix}-vpc" }
-      GroupName: !Sub "${PJPrefix}-${UseCase}-ec2-sg"
+      GroupName: !Sub "${PJPrefix}-ec2-sg"
       GroupDescription: "-"
       Tags:
         - Key: Name
-          Value: !Sub "${PJPrefix}-${UseCase}-ec2-sg"
+          Value: !Sub "${PJPrefix}-ec2-sg"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
