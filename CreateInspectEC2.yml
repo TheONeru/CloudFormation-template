@@ -8,7 +8,7 @@ Metadata:
           Default: "Project Name Prefix"
         Parameters:
           - PJPrefix
-     - Label:
+      - Label:
           Default: "EC2 Configuration"
         Parameters:
           - InstanceType
@@ -22,7 +22,7 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
- InstanceType:
+  InstanceType:
     Type: String
     Default: t1.micro
     AllowedValues:
