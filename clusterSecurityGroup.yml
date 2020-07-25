@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cluster SecurityGroup
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          Default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+
+Parameters:
+  PJPrefix:
+    Type: String
+
+Resources:
+  EC2SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      VpcId: { "Fn::ImportValue": !Sub "${PJPrefix}-vpc" }
+      GroupName: !Sub "${PJPrefix}-cluster-sg"
+      GroupDescription: "-"
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-cluster-sg"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: { "Fn::ImportValue": !Sub "${PJPrefix}-vpc-cidr" }
+
+Outputs:
+  SgGroup:
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: !Sub "${PJPrefix}-cluster-sg"
